@@ -1,112 +1,118 @@
-# Coworking Space Analytics Microservice
+# Cloud DevOps Engineer Portfolio
 
-## Overview
-This microservice provides analytics APIs for the Coworking Space Service, delivering business intelligence on user activity. The application is deployed on AWS EKS using a fully automated CI/CD pipeline that leverages AWS CodeBuild for container image builds and Kubernetes for orchestration. The system tracks coworking space usage patterns and generates reports on daily usage and individual user visits.
+This repository showcases production-ready implementations of cloud infrastructure, containerization, and CI/CD pipelines. Each project demonstrates best practices in AWS cloud architecture, Kubernetes orchestration, Infrastructure as Code, and automated deployment workflows.
 
-## Architecture
-The deployment architecture consists of four key AWS services: Amazon EKS hosts the containerized Python Flask application and PostgreSQL database, Amazon ECR stores versioned Docker images, AWS CodeBuild automates the build pipeline, and AWS CloudWatch monitors application logs and metrics. The application connects to a PostgreSQL database running as a Deployment within the same EKS cluster, ensuring low-latency data access.
+## Projects
 
-## Technologies Used
-**AWS EKS** provides managed Kubernetes orchestration with auto-scaling and self-healing capabilities. **Docker** containerizes the Python application ensuring consistent environments across development and production. **AWS CodeBuild** automates the CI/CD pipeline, building Docker images and pushing tagged versions to ECR. **PostgreSQL** serves as the relational database with EmptyDir storage for development environments. **CloudWatch Container Insights** provides comprehensive observability into application performance and cluster health. **Python Flask** powers the REST API with scheduled background tasks using APScheduler.
+### 1. Udagram - High-Availability Web Application
 
-## Deployment Pipeline
-Developers commit code changes to the GitHub repository, which can trigger AWS CodeBuild via webhook integration. CodeBuild executes `buildspec.yaml`, building a Docker image from the Dockerfile with the `--platform linux/amd64` flag for EKS compatibility, tagging it with semantic versioning using the build number, and pushing multiple tags (latest, build-number, commit-hash) to Amazon ECR for rollback flexibility. Operators then update the Kubernetes deployment YAML with the new image tag and apply it using kubectl, which triggers a rolling update with zero downtime via health and readiness probes.
+**Infrastructure as Code with AWS CloudFormation**
 
-## Releasing New Builds
-To deploy a new version, developers push code to the repository and trigger the CodeBuild pipeline. Once the build completes successfully and the image appears in ECR, update the `deployment/coworking.yaml` file with the new image tag (e.g., `v1.1`). Apply the updated configuration with `kubectl apply -f deployment/coworking.yaml` which initiates a rolling update, gradually replacing old pods with new ones while maintaining service availability through LoadBalancer routing. Monitor the rollout status with `kubectl rollout status deployment/coworking` and verify pod health using `kubectl get pods`. If issues arise, rollback instantly with `kubectl rollout undo deployment/coworking`.
+A highly available web application deployment on AWS using CloudFormation templates. The infrastructure spans multiple availability zones with a custom VPC, public and private subnets, auto-scaling EC2 instances behind an Application Load Balancer, and S3 for static content hosting. Features include automated NAT gateway deployment for high availability, security groups following least-privilege principles, and IAM roles for secure service integration. The project includes Python automation scripts for streamlined stack creation and teardown, demonstrating infrastructure orchestration and AWS best practices for fault-tolerant architectures.
 
-## AWS Instance Type Recommendation
-The **t3.small** instance type (2 vCPUs, 2GB RAM) is recommended for the worker nodes in this deployment. This instance provides sufficient resources for the lightweight Flask application (250m-500m CPU, 256Mi-512Mi memory) and a single PostgreSQL pod, while offering burstable CPU performance ideal for the analytics workload's variable traffic patterns. For production environments with higher traffic or multiple replicas, consider **t3.medium** instances (2 vCPUs, 4GB RAM) to accommodate horizontal scaling and ensure adequate headroom during peak usage periods.
+**Technologies**: AWS CloudFormation, EC2 Auto Scaling Groups, Application Load Balancer, VPC, S3, IAM, Python (boto3)
 
-## Cost Optimization Strategies
-**Implement cluster auto-scaling** using Kubernetes Cluster Autoscaler to scale nodes based on pod demand, reducing costs during off-peak hours by automatically removing unused nodes. **Use spot instances** for non-critical workloads, offering up to 90% cost savings compared to on-demand instances, though the database should remain on on-demand or reserved instances for stability. **Right-size resources** by monitoring actual CPU and memory usage via CloudWatch Container Insights and adjusting pod resource requests/limits accordingly to prevent over-provisioning. Consider **reserved instances** for predictable baseline capacity, providing up to 75% savings for one or three-year commitments. Finally, implement **pod disruption budgets** and **horizontal pod autoscaling** to optimize resource utilization while maintaining application availability.
+[📂 View Project](./Deploy%20a%20high-availability%20web%20app%20using%20CloudFormation/)
 
-## Quick Start
+---
 
-### Prerequisites
-- AWS CLI configured with appropriate credentials
-- kubectl installed and configured
-- Docker installed locally (optional, for local testing)
-- An AWS EKS cluster running
-- An Amazon ECR repository created
+### 2. Coworking Space Analytics Microservice
 
-### Database Setup
-```bash
-# Apply Persistent Volume and Persistent Volume Claim
-kubectl apply -f deployment/pvc.yaml
-kubectl apply -f deployment/pv.yaml
+**Kubernetes Deployment with CI/CD Automation**
 
-# Deploy PostgreSQL
-kubectl apply -f deployment/postgresql-deployment.yaml
-kubectl apply -f deployment/postgresql-service.yaml
+A microservices-based analytics API deployed on AWS EKS with fully automated CI/CD pipeline. The Flask application is containerized using Docker and automatically built via AWS CodeBuild upon GitHub commits. The deployment leverages Kubernetes best practices including health/readiness probes, ConfigMaps for configuration management, Secrets for credential handling, and resource limits for stable performance. PostgreSQL database is deployed using Helm charts with persistent storage, while AWS CloudWatch Container Insights provides comprehensive monitoring and log aggregation. The architecture demonstrates modern DevOps practices including semantic versioning, zero-downtime deployments, and infrastructure observability.
 
-# Verify database is running
-kubectl get pods
+**Technologies**: AWS EKS, Docker, AWS CodeBuild, AWS ECR, Kubernetes, Helm, PostgreSQL, AWS CloudWatch, Python Flask
 
-# Port forward to seed the database
-kubectl port-forward service/postgresql-service 5433:5432 &
+[📂 View Project](./Operationalizing%20a%20Coworking%20Space%20Microservice/)
 
-# Run seed files
-export DB_PASSWORD=mypassword
-PGPASSWORD="$DB_PASSWORD" psql --host 127.0.0.1 -U myuser -d mydatabase -p 5433 < db/1_create_tables.sql
-PGPASSWORD="$DB_PASSWORD" psql --host 127.0.0.1 -U myuser -d mydatabase -p 5433 < db/2_seed_users.sql
-PGPASSWORD="$DB_PASSWORD" psql --host 127.0.0.1 -U myuser -d mydatabase -p 5433 < db/3_seed_tokens.sql
-```
+---
 
-### Application Deployment
-```bash
-# Apply ConfigMap and Secret
-kubectl apply -f deployment/configmap.yaml
+### 3. Movie Picture Pipeline
 
-# Update the image URI in deployment/coworking.yaml with your ECR repository URI
-# Format: <AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/<ECR_REPO_NAME>:<IMAGE_TAG>
+**Complete CI/CD Implementation with GitHub Actions**
 
-# Deploy the application
-kubectl apply -f deployment/coworking.yaml
+A full-stack application with sophisticated CI/CD pipelines built using GitHub Actions. The project includes a React frontend (TypeScript) and Flask backend (Python), each with dedicated continuous integration and deployment workflows. CI pipelines run automated linting and testing in parallel on pull requests, while CD pipelines build Docker images tagged with Git SHA, push to container registries, and deploy to Kubernetes using Kustomize for dynamic manifest generation. The infrastructure is provisioned using Terraform on AWS EKS, demonstrating end-to-end automation from code commit to production deployment with proper environment separation and deployment validation.
 
-# Verify deployment
-kubectl get svc
-kubectl get pods
+**Technologies**: GitHub Actions, Docker, Kubernetes, Kustomize, React, TypeScript, Python Flask, Terraform, AWS EKS, AWS ECR
 
-# Access the application (use the EXTERNAL-IP from LoadBalancer)
-curl http://<EXTERNAL-IP>:5153/api/reports/daily_usage
-curl http://<EXTERNAL-IP>:5153/api/reports/user_visits
-```
+[📂 View Project](./Movie%20Picture%20Pipeline/)
 
-### CloudWatch Setup
-```bash
-# Apply CloudWatch Container Insights configuration
-kubectl apply -f deployment/cloudwatch-insights.yaml
+---
 
-# Enable control plane logging
-aws eks update-cluster-config \
-  --region <region> \
-  --name <cluster-name> \
-  --logging '{"clusterLogging":[{"types":["api","audit","authenticator","controllerManager","scheduler"],"enabled":true}]}'
-```
+## Technologies & Skills
 
-## API Endpoints
-- `GET /health_check` - Health check endpoint
-- `GET /readiness_check` - Readiness probe endpoint
-- `GET /api/reports/daily_usage` - Daily usage statistics
-- `GET /api/reports/user_visits` - User visit analytics
+### Cloud Platforms
+- **AWS Services**: EKS, ECR, CodeBuild, CloudFormation, CloudWatch, S3, IAM, VPC, EC2, ALB
 
-## Project Structure
+### Container & Orchestration
+- **Docker**: Multi-stage builds, image optimization, semantic versioning
+- **Kubernetes**: Deployments, Services, ConfigMaps, Secrets, Health Probes, Resource Management
+- **Helm**: Chart deployment and package management
+
+### CI/CD & Automation
+- **GitHub Actions**: Workflow automation, parallel job execution, conditional deployment
+- **AWS CodeBuild**: Automated Docker builds, ECR integration, webhook triggers
+- **Infrastructure as Code**: CloudFormation templates, Terraform modules, Kustomize overlays
+
+### Development & Frameworks
+- **Languages**: Python, TypeScript, JavaScript, SQL
+- **Frameworks**: Flask (REST APIs), React (SPA)
+- **Tools**: pytest, eslint, npm, pipenv
+
+### Monitoring & Observability
+- **AWS CloudWatch**: Container Insights, log aggregation, metrics collection
+- **Kubernetes**: Readiness/liveness probes, resource monitoring
+
+## Repository Structure
+
 ```
 .
-├── analytics/              # Application source code
-│   ├── app.py             # Main Flask application
-│   ├── config.py          # Database configuration
-│   ├── requirements.txt   # Python dependencies
-│   └── Dockerfile         # Container image definition
-├── db/                    # Database seed files
-├── deployment/            # Kubernetes manifests
-│   ├── configmap.yaml    # Environment configuration
-│   ├── coworking.yaml    # Application deployment
-│   ├── postgresql-*.yaml # Database resources
-│   └── cloudwatch-*.yaml # Monitoring configuration
-└── buildspec.yaml        # AWS CodeBuild specification
+├── Deploy a high-availability web app using CloudFormation/
+│   ├── network.yml                 # VPC and networking infrastructure
+│   ├── udagram.yml                 # Application stack with ALB and ASG
+│   ├── create.py                   # Automated deployment script
+│   └── README.md                   # Detailed documentation
+│
+├── Operationalizing a Coworking Space Microservice/
+│   ├── analytics/                  # Flask application source
+│   ├── deployment/                 # Kubernetes manifests
+│   ├── buildspec.yaml             # CodeBuild pipeline configuration
+│   └── README.md                   # Deployment documentation
+│
+├── Movie Picture Pipeline/
+│   ├── starter/
+│   │   ├── frontend/              # React TypeScript application
+│   │   └── backend/               # Flask Python API
+│   ├── setup/terraform/           # Infrastructure provisioning
+│   └── README.md                   # CI/CD workflow documentation
+│
+└── README.md                       # This file
 ```
 
-## Support
-For issues or questions, consult the AWS EKS documentation, Kubernetes documentation, or check CloudWatch logs for application errors.
+## Getting Started
+
+Each project contains comprehensive documentation including:
+- Architecture diagrams and design decisions
+- Step-by-step deployment instructions
+- Configuration details and customization options
+- Troubleshooting guides and best practices
+- Cost considerations and optimization strategies
+
+To explore a specific project, navigate to its directory and review the detailed README for prerequisites, setup instructions, and usage examples.
+
+## Skills Demonstrated
+
+- **Infrastructure as Code**: Declarative infrastructure using CloudFormation and Terraform
+- **Container Orchestration**: Production Kubernetes deployments with proper resource management
+- **CI/CD Pipelines**: Automated testing, building, and deployment workflows
+- **Cloud Architecture**: Multi-AZ high availability, security best practices, cost optimization
+- **Monitoring & Logging**: Centralized observability with CloudWatch Container Insights
+- **DevOps Automation**: End-to-end automation from development to production
+- **Microservices Design**: Scalable, maintainable service architectures
+- **Security Best Practices**: Least-privilege IAM policies, secrets management, network segmentation
+
+---
+
+**Note**: These projects demonstrate practical implementations of Cloud DevOps engineering principles, emphasizing automation, scalability, security, and operational excellence.
+
